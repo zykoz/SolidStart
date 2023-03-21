@@ -1,0 +1,104 @@
+/* Headers */
+pre.post h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 3.25rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+pre.post h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 2.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+pre.post h3 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 2.25rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+pre.post h4 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 2rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+pre.post h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+pre.post h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Lists */
+pre.post ul,
+pre.post ol {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    margin-left: 1.5rem;
+}
+
+pre.post ul {
+    list-style: disc;
+    padding-left: 40px;
+}
+
+pre.post ol {
+    list-style: decimal;
+    padding-left: 40px;
+}
+
+pre.post li {
+    margin-bottom: 0.25rem;
+}
+
+pre.post blockquote {
+    margin: 1em 0;
+    padding: 0 1em;
+    color: #666;
+    border-left: 0.25em solid #ccc;
+}
+
+/* Links */
+pre.post a {
+    color: #007bff; /* blue */
+    text-decoration: none;
+    background-color: transparent;
+}
+
+pre.post a:hover {
+    color: #0056b3; /* darker blue */
+    text-decoration: underline;
+}
+
+pre.post a:focus,
+pre.post a:hover {
+    color: #0056b3; /* darker blue */
+    text-decoration: underline;
+}
+
+pre.post a:active {
+    color: #0056b3; /* darker blue */
+    text-decoration: underline;
+}
+
+pre.post a:visited {
+    color: #6c757d; /* gray */
+}
