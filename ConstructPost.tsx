@@ -1,16 +1,19 @@
-import { Accessor, createEffect, createMemo, createSignal, onMount } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { marked } from "marked";
 import { markedEmoji } from "marked-emoji";
 
 import styles from "./ConstructPost.module.css";
 import hljs from "highlight.js";
 
+interface Emoji {
+    [key: string]: string;
+}
+
 export default function ConstructPost(props: any) {
     const [markdown, setMarkdown] = createSignal("");
     const [html, setHtml] = createSignal("");
 
-    const [emojiData, setEmojiData] = createSignal({});
-    const [showEmojiList, setShowEmojiList] = createSignal(false);
+    const [showEmojiList, setShowEmojiList] = createSignal(true);
     const [searchEmojiTitle, setSearchEmojiTitle] = createSignal("");
     const [markdownLastChar, setMardownLastChar] = createSignal("");
 
@@ -51,78 +54,70 @@ export default function ConstructPost(props: any) {
                     unicode: true,
                 };
                 marked.use(markedEmoji(options));
-                setEmojiData(data);
-                loadEmoji(emojiData());
-                const markdownTextArea = document.getElementById("markdownTextArea");
-                markdownTextArea && markdownTextArea.addEventListener("input", handleMarkdownChange);
+                loadEmoji(emojis);
+                document.getElementById("markdownTextArea")?.addEventListener("input", handleMarkdownChange);
             });
     });
 
     function handleMarkdownChange(e: any) {
+        // last to be called on mount
         const markdownText = e.target.value;
         setMardownLastChar(markdownText[e.target.value.length - 1]);
         if (markdownLastChar() === ":") {
-            setSearchEmojiTitle("");
-            setShowEmojiList(!showEmojiList());
+            // toggle list add event listener
+            setSearchEmojiTitle(""); // reset start with nothing
+            setShowEmojiList(!showEmojiList()); // toggle the emoji list
             showEmojiList() ? window.addEventListener("keydown", func) : window.removeEventListener("keydown", func);
         } else {
             e.inputType === "deleteContentBackward"
-                ? setSearchEmojiTitle(searchEmojiTitle().slice(0, -1))
-                : showEmojiList() && markdownLastChar() !== undefined && setSearchEmojiTitle(searchEmojiTitle() + markdownLastChar());
+                ? setSearchEmojiTitle(searchEmojiTitle().slice(0, -1)) // delete last character emojititlesignal
+                : showEmojiList() && markdownLastChar() !== undefined && setSearchEmojiTitle(searchEmojiTitle() + markdownLastChar()); // add last character
 
             document.querySelectorAll("#markdownEmojiList li").forEach((emoji: any) => {
                 emoji.getAttribute("title")?.toLowerCase().includes(searchEmojiTitle()) ? (emoji.style.display = "block") : (emoji.style.display = "none");
             });
         }
 
-        setMarkdown(markdownText);
-        setHtml(marked(markdownText));
+        setMarkdown(markdownText); // markdown text itself
+        setHtml(marked(markdownText)); // html for jsx elem
         hljs.highlightAll();
     }
 
-    function loadEmoji(data: any) {
+    function loadEmoji(data: Emoji) {
+        // second last in onMount
         let index = 0;
         const markdownEmojiList = document.getElementById("markdownEmojiList");
-        const emojiList = document.getElementById("emojiList");
 
-        data.forEach((emoji: { slug: string; character: string | null }) => {
+        for (const key in data) {
             index++;
-            let li = document.createElement("li");
-            li.setAttribute("title", emoji.slug);
-            li.setAttribute("tabindex", `${index}`);
-            li.textContent = emoji.character;
-            li.classList.add("hover:animate-bounce");
-            emojiList && emojiList.appendChild(li);
-
             let newLi = document.createElement("li");
             let newI = document.createElement("span");
             let newSpan = document.createElement("span");
 
-            newLi.setAttribute("title", emoji.slug);
-            newLi.setAttribute("tabindex", `${index}`);
+            newLi.setAttribute("title", key);
+            newLi.setAttribute("tabindex", `${index}`); // want to be able to use tab key to go through emoji list // focus will have problems because we use an index var
             newI.classList.add("w-[50px]", "inline-block", "text-center");
-            newI.textContent = emoji.character;
-            newSpan.textContent = `:${emoji.slug}:`;
+            newI.textContent = data[key];
+            newSpan.textContent = ":" + key + ":";
             newLi.appendChild(newI);
             newLi.appendChild(newSpan);
 
             markdownEmojiList && markdownEmojiList.appendChild(newLi);
-        });
+        }
+
         return markdownEmojiList && markdownEmojiList.querySelectorAll("li");
     }
 
     function addTextToTextArea(textAreaElement: HTMLTextAreaElement, textToAdd: string) {
-        let num = searchEmojiTitle().length * -1;
+        let num = searchEmojiTitle().length * -1; // ommit last text from textarea, could maybe handle another way
         if (searchEmojiTitle()) textAreaElement.value = textAreaElement.value.slice(0, num);
-        console.log(textAreaElement.value);
         textAreaElement.value += textToAdd;
-        setShowEmojiList(!showEmojiList());
+        setShowEmojiList(false); // done action so close the list
     }
 
     const func = (e: any) => {
         let focusedIndex = 0;
-        const markdownEmojiList = document.getElementById("markdownEmojiList");
-        const listItems = markdownEmojiList && markdownEmojiList.querySelectorAll("li");
+        const listItems = document.querySelectorAll("#markdownEmojiList li");
 
         if (e.key === "Tab") {
             e.preventDefault();
@@ -137,22 +132,20 @@ export default function ConstructPost(props: any) {
             textArea.focus();
             return;
         }
-
-        if (markdownEmojiList) {
-            // Check if the list is focused
-            if (e.key === "ArrowDown" || e.key === "Down") {
-                // Move focus down
-                focusedIndex++;
-                if (listItems && focusedIndex >= listItems.length) {
-                    focusedIndex = 0; // Wrap back to the top
-                }
-            } else if (e.key === "ArrowUp" || e.key === "Up") {
-                // Move focus up
-                focusedIndex--;
-                if (listItems && focusedIndex < 0) {
-                    focusedIndex = listItems.length - 1; // Wrap to the bottom
-                }
+        // Check if the list is focused
+        if (e.key === "ArrowDown" || e.key === "Down") {
+            // Move focus down
+            focusedIndex++;
+            if (listItems && focusedIndex >= listItems.length) {
+                focusedIndex = 0; // Wrap back to the top
             }
+        } else if (e.key === "ArrowUp" || e.key === "Up") {
+            // Move focus up
+            focusedIndex--;
+            if (listItems && focusedIndex < 0) {
+                focusedIndex = listItems.length - 1; // Wrap to the bottom
+            }
+
             listItems.forEach((item, index) => {
                 if (index === focusedIndex) {
                     item.classList.add("focused", "border", "border-red-700");
