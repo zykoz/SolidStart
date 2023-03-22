@@ -1,4 +1,5 @@
-import { Accessor, createMemo, createSignal, onMount } from "solid-js";
+import { Accessor, createEffect, createMemo, createSignal, For, onCleanup, onMount } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { marked } from "marked";
 import { markedEmoji } from "marked-emoji";
 
@@ -9,16 +10,7 @@ interface Emoji {
     [key: string]: string;
 }
 
-export default function ConstructPost() {
-    const [markdown, setMarkdown] = createSignal("");
-    const [html, setHtml] = createSignal("");
-
-    const [showEmojiList, setShowEmojiList] = createSignal(true);
-    const [searchEmojiTitle, setSearchEmojiTitle] = createSignal("");
-    const [markdownLastChar, setMardownLastChar] = createSignal("");
-
-    let unorderedListItemsMemo: Accessor<HTMLCollection> | (() => { title: string }[]);
-
+export default async function ConstructPost() {
     onMount(() => {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -44,8 +36,74 @@ export default function ConstructPost() {
             smartLists: true,
             async: true,
         });
+    }); // End of onMount()
+    const [markdown, setMarkdown] = createSignal("");
+    const [html, setHtml] = createSignal("");
 
-        fetch("https://emoji-api.com/emojis?access_key=7045da4d1db20887df16cb32ad6af6a07873c4a4")
+    const [showEmojiList, setShowEmojiList] = createSignal(true);
+    const [searchEmojiTitle, setSearchEmojiTitle] = createSignal("");
+    const [markdownLastChar, setMardownLastChar] = createSignal("");
+
+    let unorderedListItemsMemo: Accessor<HTMLCollection> | (() => { title: string }[]);
+
+    // fetch data asynchronously and create list items
+    const dataFromAPI = await fetchEmojiDataFromAPI();
+    const listElsFromAPI = createListItemsFromData(dataFromAPI);
+    unorderedListItemsMemo = createMemo(() => listElsFromAPI);
+    const [showElement, setShowElement] = createSignal(true);
+
+    // create a memoized value based on the signal
+    const dynamicElement = createMemo(() => {
+        if (showElement()) {
+            // return the dynamic element as a component
+            return () => (
+                <ul id='markdownEmojiList' class='bg-darker-100 w-max cursor-pointer dark:bg-darker-600 dark:text-darker-50 border focus:border-red-700'>
+                    <span>EMOJI MATCHING:{searchEmojiTitle()}</span>
+                    <For each={unorderedListItemsMemo() as HTMLLIElement[]} fallback={<div>Loading...</div>}>
+                        {(item) => <>{item}</>}
+                    </For>
+                </ul>
+            );
+        }
+    });
+
+    // cleanup function to remove the dynamic element when showElement is set to false
+    createEffect(() => {
+        onCleanup(() => {
+            if (!showElement()) {
+                const container = document.querySelector(".dynamic-element-container");
+                container?.firstChild && container.removeChild(container.firstChild);
+            }
+        });
+    });
+
+    // function to toggle the showElement signal
+    const toggleShowElement = () => setShowElement(!showElement());
+
+    function createListItemsFromData(data: Emoji) {
+        let index: number = 0;
+        const listItems = [];
+
+        for (const key in data) {
+            let ListEl: HTMLLIElement = document.createElement("li");
+            let SpanElEmoji: HTMLSpanElement = document.createElement("span");
+            let SpanElText: HTMLSpanElement = document.createElement("span");
+
+            ListEl.setAttribute("title", key);
+            ListEl.setAttribute("tabindex", `${index}`);
+            SpanElEmoji.classList.add("w-[50px]", "inline-block", "text-center");
+            SpanElEmoji.textContent = data[key];
+            SpanElText.textContent = ":" + key + ":";
+            ListEl.appendChild(SpanElEmoji);
+            ListEl.appendChild(SpanElText);
+            listItems.push(ListEl);
+        }
+
+        return listItems;
+    }
+
+    async function fetchEmojiDataFromAPI() {
+        return fetch("https://emoji-api.com/emojis?access_key=7045da4d1db20887df16cb32ad6af6a07873c4a4")
             .then((res) => res.json())
             .then((data) => {
                 const emojis = data.reduce((acc: any, { slug, character }: Emoji) => {
@@ -56,10 +114,10 @@ export default function ConstructPost() {
                     unicode: true,
                 };
                 marked.use(markedEmoji(options));
-                loadEmoji(emojis);
                 document.getElementById("markdownTextArea")?.addEventListener("input", handleMarkdownChange);
+                return emojis;
             });
-    }); // End of onMount()
+    }
 
     function handleMarkdownChange(e: Event) {
         const markdownText = (e.target as HTMLTextAreaElement).value;
@@ -85,30 +143,6 @@ export default function ConstructPost() {
         setMarkdown(markdownText); // markdown text itself
         setHtml(marked(markdownText)); // html for jsx elem
         hljs.highlightAll();
-    }
-
-    function loadEmoji(data: Emoji) {
-        // second last in onMount
-        let index: number = 0;
-        const markdownEmojiList = document.getElementById("markdownEmojiList") as HTMLUListElement;
-
-        for (const key in data) {
-            index++;
-            let ListEl: HTMLLIElement = document.createElement("li");
-            let SpanElEmoji: HTMLSpanElement = document.createElement("span");
-            let SpanElText: HTMLSpanElement = document.createElement("span");
-
-            ListEl.setAttribute("title", key);
-            ListEl.setAttribute("tabindex", `${index}`); // want to be able to use tab key to go through emoji list // focus will have problems because we use an index var
-            SpanElEmoji.classList.add("w-[50px]", "inline-block", "text-center");
-            SpanElEmoji.textContent = data[key];
-            SpanElText.textContent = ":" + key + ":";
-            ListEl.appendChild(SpanElEmoji);
-            ListEl.appendChild(SpanElText);
-            markdownEmojiList!.appendChild(ListEl);
-
-            unorderedListItemsMemo = createMemo(() => markdownEmojiList.children);
-        }
     }
 
     function addTextToTextArea(textAreaElement: HTMLTextAreaElement, textToAdd: string) {
@@ -166,11 +200,10 @@ export default function ConstructPost() {
                     <pre id='pre' innerHTML={html()} class={styles.post} />
                 </div>
             </div>
-            {showEmojiList() && (
-                <ul id='markdownEmojiList' class='bg-darker-100 w-max cursor-pointer dark:bg-darker-600 dark:text-darker-50 border focus:border-red-700'>
-                    <span>EMOJI MATCHING:{searchEmojiTitle()}</span>
-                </ul>
-            )}
+            <div class='dynamic-element-container'>
+                {/* render the dynamic element using the Dynamic component */}
+                <Dynamic component={dynamicElement} />
+            </div>
         </>
     );
 }
