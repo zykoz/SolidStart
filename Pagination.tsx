@@ -1,25 +1,18 @@
-import { For, Show, createEffect } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 import { A, useLocation } from "solid-start";
-import { usePagination, DOTS } from "./utils/usePagination";
+
+const [tryTest, setTryTest] = createSignal(1);
 
 export default function Pagination(props: any) {
-    let paginationRange = usePagination(props.store.currentPage, props.store.totalCount, props.store.siblingCount, props.store.pageSize);
-    let lastPage: any;
-
-    if (paginationRange()) {
-        let length = paginationRange()!.length;
-        if (props.store.currentPage === 0 || length < 2) {
-            return null;
-        }
-        lastPage = paginationRange()![length - 1];
-    }
-
     const location = useLocation();
-
+    createEffect(() => {
+        console.log("pagination pagination range updated");
+        tryTest();
+    });
     return (
         <div class='pagination-container bg-white dark:bg-baltic-sea-850 dark:text-white'>
             <Show
-                when={props.store.currentPage !== 1}
+                when={props.store().currentPage !== 1}
                 fallback={
                     <button class={`pagination-item`}>
                         <div class='arrow left opacity-50'>
@@ -46,7 +39,8 @@ export default function Pagination(props: any) {
                     href={`?page=${Number(location.query["page"]) - 1}`}
                     class={`pagination-item`}
                     onClick={() => {
-                        props.onPageChange(props.store.currentPage - 1);
+                        props.onPageChange(props.store().currentPage - 1);
+                        setTryTest(tryTest() + 2);
                     }}
                 >
                     <div class='arrow left dark:text-white'>
@@ -68,17 +62,18 @@ export default function Pagination(props: any) {
                     </div>
                 </A>
             </Show>
-            <For each={paginationRange()}>
+            <For each={props.store().range}>
                 {(pageNumber) => {
-                    if (pageNumber === DOTS) {
+                    if ((pageNumber as unknown as string) === props.store().DOTS) {
                         return <button class='pagination-item dots'>&#8230;</button>;
                     }
                     return (
                         <A
                             href={`?page=${pageNumber}`}
-                            class={`pagination-item`}
-                            activeClass={`${pageNumber === props.store.currentPage && "selected"}`}
-                            onClick={() => props.onPageChange(pageNumber)}
+                            class={`pagination-item ${pageNumber === props.store().currentPage && "selected"}`}
+                            onClick={() => {
+                                props.onPageChange(pageNumber);
+                            }}
                         >
                             {pageNumber}
                         </A>
@@ -86,7 +81,7 @@ export default function Pagination(props: any) {
                 }}
             </For>
             <Show
-                when={props.store.currentPage !== lastPage}
+                when={props.store().currentPage !== props.store().lastPage}
                 fallback={
                     <button class={`pagination-item`}>
                         <div class='arrow right opacity-50  dark:text-white'>
@@ -113,7 +108,8 @@ export default function Pagination(props: any) {
                     href={`?page=${Number(location.query["page"]) + 1}`}
                     class={`pagination-item`}
                     onClick={() => {
-                        props.onPageChange(props.store.currentPage + 1);
+                        props.onPageChange(Number(props.store().currentPage) + 1);
+                        setTryTest(tryTest() + 2);
                     }}
                 >
                     <div class='arrow right dark:text-white'>
