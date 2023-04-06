@@ -4,21 +4,18 @@ import { usePagination, DOTS } from "./utils/usePagination";
 
 export default function Pagination(props: any) {
     let paginationRange = usePagination(props.store.currentPage, props.store.totalCount, props.store.siblingCount, props.store.pageSize);
-    let lastPage;
+    let lastPage: any;
 
-    if (paginationRange) {
-        let length = paginationRange()()!.length;
+    if (paginationRange()) {
+        let length = paginationRange()!.length;
         if (props.store.currentPage === 0 || length < 2) {
             return null;
         }
-        lastPage = paginationRange()()![length - 1];
+        lastPage = paginationRange()![length - 1];
     }
 
     const location = useLocation();
-    createEffect(() => {
-        console.log("effect");
-        props.store.currentPage;
-    });
+
     return (
         <div class='pagination-container bg-white dark:bg-baltic-sea-850 dark:text-white'>
             <Show
@@ -71,7 +68,7 @@ export default function Pagination(props: any) {
                     </div>
                 </A>
             </Show>
-            <For each={paginationRange()()}>
+            <For each={paginationRange()}>
                 {(pageNumber) => {
                     if (pageNumber === DOTS) {
                         return <button class='pagination-item dots'>&#8230;</button>;
