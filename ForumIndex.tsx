@@ -5,7 +5,7 @@ import ForumList from "~/components/ForumList";
 import CreateTopic from "~/components/CreateTopic";
 import Folder from "~/components/Folders";
 import TopicHelper from "~/components/TopicHelper";
-import { Show, createEffect, createSignal } from "solid-js";
+import { Show } from "solid-js";
 import { getUserId } from "~/db/session";
 
 export function routeData({ location }: RouteDataArgs) {
@@ -56,11 +56,7 @@ export default function ForumsPage() {
         refetchRouteData();
     });
     const data = useRouteData<typeof routeData>();
-    const [test, testSignal] = createSignal(data());
-    createEffect(() => {
-        console.log("data");
-        test();
-    });
+
     let forumId = data.latest?.forums[0]?.id ? data.latest?.forums[0]?.id : "No_Forum";
     return (
         <div>
