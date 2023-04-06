@@ -1,30 +1,12 @@
 import Forum from "./Forum";
-import { For, createEffect } from "solid-js";
+import { For } from "solid-js";
 import { gridColumn } from "~/store/mySignal";
-import { useRouteData, useLocation } from "solid-start";
-import Pagination from "./Pagination";
+import { useRouteData } from "solid-start";
 import type { Topic } from "@prisma/client";
-import { createMutable } from "solid-js/store";
 
 export default function ForumList(props: any) {
     const data = useRouteData<typeof props.dataType>();
 
-    let paginationStore = createMutable({
-        currentPage: Number(useLocation().query["page"]) || 1,
-        totalCount: data.latest?.totalForums,
-        siblingCount: 1,
-        pageSize: data.latest?.itemsPerPage,
-    });
-
-    createEffect(() => {
-        console.log("ForumList PaginationStore in effect");
-        paginationStore = createMutable({
-            currentPage: Number(useLocation().query["page"]) || 1,
-            totalCount: data.latest?.totalForums,
-            siblingCount: 1,
-            pageSize: data.latest?.itemsPerPage,
-        });
-    });
     return (
         <section class={`grid grid-cols-${gridColumn().toString()}`}>
             {Array.isArray(data.latest?.forums) ? (
@@ -71,7 +53,6 @@ export default function ForumList(props: any) {
             ) : (
                 <Forum href={`/f/${encodeURIComponent(!data.latest?.forums[0]?.name.replace(/\s+/g, "_"))}`} title={!data?.latest?.forums[0]?.name} />
             )}
-            <Pagination store={paginationStore} onPageChange={(page: number) => (paginationStore.currentPage = page)} />
         </section>
     );
 }
