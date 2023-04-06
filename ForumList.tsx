@@ -1,5 +1,5 @@
 import Forum from "./Forum";
-import { For } from "solid-js";
+import { For, createEffect } from "solid-js";
 import { gridColumn } from "~/store/mySignal";
 import { useRouteData, useLocation } from "solid-start";
 import Pagination from "./Pagination";
@@ -9,13 +9,22 @@ import { createMutable } from "solid-js/store";
 export default function ForumList(props: any) {
     const data = useRouteData<typeof props.dataType>();
 
-    const paginationStore = createMutable({
+    let paginationStore = createMutable({
         currentPage: Number(useLocation().query["page"]) || 1,
         totalCount: data.latest?.totalForums,
         siblingCount: 1,
         pageSize: data.latest?.itemsPerPage,
     });
 
+    createEffect(() => {
+        console.log("ForumList PaginationStore in effect");
+        paginationStore = createMutable({
+            currentPage: Number(useLocation().query["page"]) || 1,
+            totalCount: data.latest?.totalForums,
+            siblingCount: 1,
+            pageSize: data.latest?.itemsPerPage,
+        });
+    });
     return (
         <section class={`grid grid-cols-${gridColumn().toString()}`}>
             {Array.isArray(data.latest?.forums) ? (
