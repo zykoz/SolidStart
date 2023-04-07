@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
 import { A, useLocation, useRouteData } from "solid-start";
 
 export default function Pagination(props: any) {
@@ -72,15 +72,7 @@ export default function Pagination(props: any) {
         }
     });
 
-    let lastPage: any;
-
-    if (usePagination()) {
-        let length = usePagination()!.length;
-        if (paginationSignal().currentPage === 0 || length < 2) {
-            return null;
-        }
-        lastPage = usePagination()![length - 1];
-    }
+    let lastPage = 0;
 
     const onPageChange = (page: number) => {
         setPaginationSignal({
@@ -89,7 +81,22 @@ export default function Pagination(props: any) {
             siblingCount: paginationSignal().siblingCount,
             pageSize: paginationSignal().pageSize,
         });
+        localStorage.setItem("pagination", JSON.stringify(paginationSignal()));
     };
+
+    onMount(() => {
+        const str = localStorage.getItem("pagination");
+        const storedPagination = JSON.parse(str as string);
+        storedPagination && setPaginationSignal(storedPagination);
+
+        if (usePagination()) {
+            let length = usePagination()!.length;
+            if (paginationSignal().currentPage === 0 || length < 2) {
+                return null;
+            }
+            lastPage = usePagination()![length - 1];
+        }
+    });
 
     return (
         <div class='pagination-container bg-white dark:bg-baltic-sea-850 dark:text-white'>
@@ -160,7 +167,7 @@ export default function Pagination(props: any) {
                 }}
             </For>
             <Show
-                when={paginationSignal().currentPage !== lastPage}
+                when={paginationSignal().currentPage !== lastPage && lastPage}
                 fallback={
                     <button class={`pagination-item`}>
                         <div class='arrow right opacity-50  dark:text-white'>
@@ -184,7 +191,7 @@ export default function Pagination(props: any) {
                 }
             >
                 <A
-                    href={`?page=${location.query["page"] ? Number(location.query["page"]) + 1 : 1 + 1}`}
+                    href={`?page=${location.query["page"] ? Math.min(Number(location.query["page"]) + 1) : 1 + 1}`}
                     class={`pagination-item`}
                     onClick={() => onPageChange(Number(paginationSignal().currentPage) + 1)}
                 >
